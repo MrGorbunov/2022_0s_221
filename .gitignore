@@ -72,3 +72,7 @@ cachelab.tar
 cachelab/
 .csim_results
 .marker
+
+# For open vim files
+*.swp
+
