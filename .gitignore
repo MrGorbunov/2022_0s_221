@@ -73,6 +73,7 @@ cachelab/
 .csim_results
 .marker
 
-# For open vim files
+# Editing & Submission files
 *.swp
+*.tar
 
