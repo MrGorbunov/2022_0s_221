@@ -37,7 +37,6 @@ int main(
 
 	// Processing Variables
 	int** multMinCost;
-	unsigned int** finalProduct;
 
 
 	//
@@ -56,45 +55,12 @@ int main(
 		perror("reading the number of matricies failed");
 		exit(EXIT_FAILURE);
 	}
-	
-	printf("Number mats: %d\n", numMats);
 
 	numRows = calloc(numMats, sizeof(unsigned int));
 	numCols = calloc(numMats, sizeof(unsigned int));
 	matricies = calloc(numMats, sizeof(unsigned int**));
 
 	readMatriciesFromFile(fp, numMats, numRows, numCols, matricies);
-
-
-
-	
-	//
-	// Sanity check debugs
-	printf("Number mats: %d\n", numMats);
-	for (unsigned int i=0; i<numMats; i++) {
-		printf(" == Matrix %d ==\n", i);
-		print2DArr(matricies[i], numRows[i], numCols[i]);
-		printf("\n");
-	}
-
-
-	printf("\n\n");
-	printf("Multiplying array 0 & 1\n");
-
-	unsigned int** multResult = calloc(numRows[0], sizeof(unsigned int*));
-	for (int r=0; r<(int) numRows[0]; r++)
-		multResult[r] = calloc(numCols[1], sizeof(unsigned int));
-
-	matMul(matricies[0], numRows[0], numCols[0],
-			matricies[1], numRows[1], numCols[1],
-			multResult);
-
-	print2DArr(multResult, numRows[0], numCols[1]);
-
-	for (int i=0; i<(int) numRows[0]; i++)
-		free(multResult[i]);
-	free(multResult);
-
 
 
 
@@ -111,18 +77,8 @@ int main(
 			multMinCost[i][j] = -1;
 	}
 
-	printf("\n");
-	print2DArr(multMinCost, numMats, numMats);
-
-	printf("\n");
-	printf("Getting cost of multiplication\n");
 	int minCost;
 	multipleMatMulCost(numRows, numCols, multMinCost, 0, numMats - 1, &minCost);
-	printf("Min Cost: %d\n", minCost);
-
-	printf("\n");
-	print2DArr(multMinCost, numMats, numMats);
-
 
 	unsigned int rowsFinalMat = numRows[0];
 	unsigned int colsFinalMat = numCols[numMats - 1];
@@ -130,11 +86,16 @@ int main(
 	for (unsigned int rf=0; rf<rowsFinalMat; rf++)
 		finalMat[rf] = calloc(colsFinalMat, sizeof(unsigned int));
 
-	printf("\nAttempting multiplication of mats %d through %d\n", 0, numMats-1);
 	multipleMatMulMatrix(numMats, matricies, numRows, numCols, 
 			multMinCost, 0, numMats-1, finalMat);
-	printf("\nNow getting matrix\n");
-	print2DArr(finalMat, rowsFinalMat, colsFinalMat);
+
+	printf("%d\n", minCost);
+	for (unsigned int rf=0; rf<rowsFinalMat; rf++) {
+		for (unsigned int cf=0; cf<colsFinalMat; cf++)
+			printf("%d ", finalMat[rf][cf]);
+		printf("\n");
+	}
+
 
 	for (unsigned int rf=0; rf<rowsFinalMat; rf++)
 		free(finalMat[rf]);
