@@ -1,30 +1,50 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <assert.h>
-#include <stdbool.h>
 
+int main (int, char*[]);
 
-int main(int, char*[]);
-
-void optimallyMultiplyMatrix (unsigned int, unsigned int, unsigned int***, unsigned int***, unsigned int****, unsigned int****, unsigned int*);
-void multiplyMatricies (unsigned int***, unsigned int***, unsigned int, unsigned int, unsigned int, unsigned int***);
-
+void readMatriciesFromFile (FILE*, unsigned int, 
+		unsigned int*, unsigned int*, unsigned int***);
 void print2DArr (unsigned int**, unsigned int, unsigned int);
-void print2DSizeArr (unsigned int***, unsigned int);
+
+void matMul (unsigned int**, unsigned int, unsigned int,
+		unsigned int**, unsigned int, unsigned int,
+		unsigned int**);
+void multipleMatMulMatrix (unsigned int, unsigned int***, unsigned int*, unsigned int*,
+		int**, unsigned int, unsigned int,
+		unsigned int**
+		);
+void multipleMatMulCost (unsigned int*, unsigned int*, int**,
+		unsigned int, unsigned int,
+		int*);
+void calcCostOfGrouping (unsigned int*, unsigned int*, int**, 
+		unsigned int, unsigned int, int, 
+		int*);
 
 
 
-int main(int argc, char* argv[]) {
 
-	unsigned int matrixCount;
-	unsigned int* rowSizes;
-	unsigned int* colSizes;
-	unsigned int*** matricies;
+int main(
+		int argc, char* argv[]
+		) {
 	
+	// Read from input
+	unsigned int numMats;
+	unsigned int* numRows;
+	unsigned int* numCols;
+	unsigned int*** matricies;
+
+	// Processing Variables
+	int** multMinCost;
+	unsigned int** finalProduct;
+
 
 	//
-	// Reading Input
+	// Reading User Input
 	//
+
+	assert(argc == 2); /* Parameter 2 (argv[1]) should be the file path */
 
 	FILE* fp = fopen(argv[1], "r");
 	if (!fp) {
@@ -32,40 +52,48 @@ int main(int argc, char* argv[]) {
 		exit(EXIT_FAILURE);
 	}
 
-	if (!fscanf(fp, "%d\n", &matrixCount)) {
-		perror("reaidng the number of matrices failed");
+	if (!fscanf(fp, "%d\n", &numMats)) {
+		perror("reading the number of matricies failed");
 		exit(EXIT_FAILURE);
 	}
-
-	rowSizes = calloc( matrixCount, sizeof(unsigned int));
-	colSizes = calloc( matrixCount, sizeof(unsigned int));
-	matricies = calloc( matrixCount, sizeof(unsigned int**));
 	
-	printf("Num mats: %d\n", matrixCount);
+	printf("Number mats: %d\n", numMats);
+
+	numRows = calloc(numMats, sizeof(unsigned int));
+	numCols = calloc(numMats, sizeof(unsigned int));
+	matricies = calloc(numMats, sizeof(unsigned int**));
+
+	readMatriciesFromFile(fp, numMats, numRows, numCols, matricies);
+
+
+
 	
-	for (int mat=0; mat<matrixCount; mat++) {
-		if (!fscanf(fp, "%d %d\n", &rowSizes[mat], &colSizes[mat])) {
-			perror("reading matrix size failed");
-			exit(EXIT_FAILURE);
-		}
-
-		int rowSz = rowSizes[mat];
-		int colSz = colSizes[mat];
-
-		matricies[mat] = calloc(rowSz, sizeof(unsigned int*));
-
-		for (int r=0; r<rowSz; r++) {
-			matricies[mat][r] = calloc(colSz, sizeof(unsigned int));
-
-			for (int c=0; c<colSz; c++) {
-				// indexing is [row][col]
-				fscanf(fp, "%d", &matricies[mat][r][c]);
-			}
-
-			fscanf(fp, "\n");
-		}
+	//
+	// Sanity check debugs
+	printf("Number mats: %d\n", numMats);
+	for (unsigned int i=0; i<numMats; i++) {
+		printf(" == Matrix %d ==\n", i);
+		print2DArr(matricies[i], numRows[i], numCols[i]);
+		printf("\n");
 	}
 
+
+	printf("\n\n");
+	printf("Multiplying array 0 & 1\n");
+
+	unsigned int** multResult = calloc(numRows[0], sizeof(unsigned int*));
+	for (int r=0; r<(int) numRows[0]; r++)
+		multResult[r] = calloc(numCols[1], sizeof(unsigned int));
+
+	matMul(matricies[0], numRows[0], numCols[0],
+			matricies[1], numRows[1], numCols[1],
+			multResult);
+
+	print2DArr(multResult, numRows[0], numCols[1]);
+
+	for (int i=0; i<(int) numRows[0]; i++)
+		free(multResult[i]);
+	free(multResult);
 
 
 
@@ -75,197 +103,114 @@ int main(int argc, char* argv[]) {
 	// Processing
 	//
 
-	// TODO: Try making contigous array memory block
- 	unsigned int**  matMulCost = calloc( matrixCount, sizeof(unsigned int*) );
- 	unsigned int*** matMulSize = calloc( matrixCount, sizeof(unsigned int**) );
- 
- 	for (int i=0; i<matrixCount; i++) {
-		matMulCost[i] = calloc( matrixCount, sizeof(unsigned int) );
-		matMulSize[i] = calloc( matrixCount, sizeof(unsigned int*) );
-
- 		for (int j=0; j<matrixCount; j++) {
- 			matMulSize[i][j] = calloc( 2, sizeof(unsigned int) );
-
-			if (i < j) {
-				matMulCost[i][j] = -1;
-				matMulSize[i][j][0] = -1;
-				matMulSize[i][j][1] = -1;
-			}
- 		}
- 	}
-
-
-	// Populate matrix size table
-	for (int i=0; i<matrixCount; i++) {
-		matMulSize[i][i][0] = rowSizes[i];
-		matMulSize[i][i][1] = colSizes[i];
+	// Initializing
+	multMinCost = calloc(numMats, sizeof(int*));
+	for (unsigned int i=0; i<numMats; i++) {
+		multMinCost[i] = calloc(numMats, sizeof(int));
+		for (unsigned int j=0; j<numMats; j++)
+			multMinCost[i][j] = -1;
 	}
 
-	for (int j=0; j<matrixCount; j++) {
-		for (int i=j+1; i<matrixCount; i++) {
-			matMulSize[i][j][0] = matMulSize[j][j][0];
-			matMulSize[i][j][1] = matMulSize[i][i][1];
-		}
-	}
-
-
-	/*
-		 Now to think:
-		A : 2 x 3
-		B : 3 x 8
-
-    # of ops = 2 * 3 * 8
-	 */
-
-	// Populate cost table
-	for (int i=0; i<matrixCount; i++) {
-		matMulCost[i][i] = 0;
-	}
-
- 	for (int j=0; j+1<matrixCount; j++) {
- 		int i = j+1;
- 		matMulCost[i][j] = matMulSize[i-1][j][0] * matMulSize[i-1][j][1] * matMulSize[i][j+1][1];
- 	}
- 
- 
- 	int iteration = 2;
- 
- 	while (matMulCost[matrixCount-1][0] == 0) {
- 		for (int i=0; i<matrixCount-iteration; i++) {
- 			unsigned int costMin = -1;
- 
- 			for (int j=0; j<iteration; j++) {
- 				int row = j+i;
- 				int col = i+1+j;
- 
- 				int matCost = matMulSize[row][i][0] * matMulSize[row][i][1] * matMulSize[iteration + i][col][1] + matMulCost[row][i] + matMulCost[iteration + i][col];
- 
- 				if (matCost < costMin || costMin == -1)
- 					costMin = matCost;
- 			}
- 
- 			printf("\nWriting cost %d to [%d][%d]\n", costMin, i+1, i);
- 			matMulCost[i+iteration][i] = costMin;
- 		}
- 
- 		iteration++;
- 	}
- 
-
-	// Now using the matMulCost, we recursively produce the matrix
-	// in the minimum number of operations.
-	//
-	// Doing this non-recursively would require building a tree which
-	// could actually be done while populating the cost array (matMulCost)
-	// but I chose against it because it feels a tad overkill.
-	unsigned int** matrixResult;
-
-	optimallyMultiplyMatrix(matrixCount-1, 0, &matrixResult, &matMulCost, &matMulSize, &matricies, &matrixCount);
- 
 	printf("\n");
-	print2DArr(matrixResult, matMulSize[matrixCount-1][0][0], matMulSize[matrixCount-1][0][1]);
+	print2DArr(multMinCost, numMats, numMats);
+
 	printf("\n");
- 
- 	print2DArr(matMulCost, matrixCount, matrixCount);
- 	print2DSizeArr(matMulSize, matrixCount);
+	printf("Getting cost of multiplication\n");
+	int minCost;
+	multipleMatMulCost(numRows, numCols, multMinCost, 0, numMats - 1, &minCost);
+	printf("Min Cost: %d\n", minCost);
+
+	printf("\n");
+	print2DArr(multMinCost, numMats, numMats);
+
+
+	unsigned int rowsFinalMat = numRows[0];
+	unsigned int colsFinalMat = numCols[numMats - 1];
+	unsigned int** finalMat = calloc(rowsFinalMat, sizeof(unsigned int*));
+	for (unsigned int rf=0; rf<rowsFinalMat; rf++)
+		finalMat[rf] = calloc(colsFinalMat, sizeof(unsigned int));
+
+	printf("\nAttempting multiplication of mats %d through %d\n", 0, numMats-1);
+	multipleMatMulMatrix(numMats, matricies, numRows, numCols, 
+			multMinCost, 0, numMats-1, finalMat);
+	printf("\nNow getting matrix\n");
+	print2DArr(finalMat, rowsFinalMat, colsFinalMat);
+
+	for (unsigned int rf=0; rf<rowsFinalMat; rf++)
+		free(finalMat[rf]);
+	free(finalMat);
 
 
 
 
 
 	//
-	// Cleanup
+	// Clean Up
 	//
 
-	for (int i=0; i<matrixCount; i++) {
-		for (int j=0; j<rowSizes[i]; j++) {
-			free(matricies[i][j]);
-		}
-		free(matricies[i]);
+	for (unsigned int m=0; m<numMats; m++) {
+		for (unsigned int r=0; r<numRows[m]; r++)
+			free(matricies[m][r]);
+		free(matricies[m]);
+		free(multMinCost[m]);
 	}
+
 	free(matricies);
+	free(multMinCost);
+	free(numRows);
+	free(numCols);
 
-	free(rowSizes);
-	free(colSizes);
-
-	exit(EXIT_SUCCESS);
+	return EXIT_SUCCESS;
 }
 
 
-void optimallyMultiplyMatrix (unsigned int row, unsigned int col, unsigned int*** finalMatrix, unsigned int*** matMulCost, unsigned int**** matMulSize, unsigned int**** matricies, unsigned int* matrixCount) {
-	if (row == col) {
-		(*finalMatrix) = (*matricies)[row];
-		return;
-	}
-	if (row == col + 1) {
-		multiplyMatricies(&(*matricies)[col], &(*matricies)[row], (*matMulSize)[col][col][0], (*matMulSize)[col][col][1], (*matMulSize)[row][row][1], finalMatrix);
-		return;
-	}
 
-	unsigned int targetCost = (*matMulCost)[row][col];
-	for (int i=0; i<row; i++) {
-		unsigned int matR = col+i;
-		unsigned int matC = col+i+1;
-		unsigned int matCost = (*matMulSize)[matR][col][0] * (*matMulSize)[matR][col][1] * (*matMulSize)[row][matC][1] + (*matMulCost)[matR][col] + (*matMulCost)[row][matC];
 
-		if (matCost == targetCost) {
-			unsigned int** matA;
-			unsigned int** matB;
-			unsigned int** finalMatrix;
 
-			unsigned int rowsA = (*matMulSize)[matR][col][0];
-			unsigned int colsA = (*matMulSize)[matR][col][1];
-			unsigned int rowsB = (*matMulSize)[row][matC][0];
-			unsigned int colsB = (*matMulSize)[row][matC][1];
 
-			finalMatrix = calloc (rowsA, sizeof(unsigned int*));
-			for (int r=0; r<rowsA; r++)
-				finalMatrix[r] = calloc (colsB, sizeof(unsigned int));
-	
-			optimallyMultiplyMatrix(matR, col, &matA, matMulCost, matMulSize, matricies, matrixCount);
-			optimallyMultiplyMatrix(row, matC, &matB, matMulCost, matMulSize, matricies, matrixCount);
-			multiplyMatricies(&matA, &matB, rowsA, rowsB, colsB, &finalMatrix);
 
-// 			for (int ra=0; ra<rowsA; ra++)
-// 				free(matA[ra]);
-// 			for (int rb=0; rb<rowsB; rb++)
-// 				free(matB[rb]);
-// 			free(matA);
-// 			free(matB);
+//======================================================
+//
+//    Input / Output
+//
+//======================================================
 
-			return;
+void readMatriciesFromFile (
+		FILE* fp, unsigned int numMats, 
+		unsigned int* numRows, unsigned int* numCols, unsigned int*** matricies
+		) {
+
+	for (unsigned int mat=0; mat<numMats; mat++) {
+		if (!fscanf(fp, "%d %d\n", &numRows[mat], &numCols[mat])) {
+			perror("reading matrix size failed");
+			exit(EXIT_FAILURE);
 		}
-	}
 
-	perror("Optimal cost not found");
-}
+		int rowSz = (int) numRows[mat];
+		int colSz = (int) numCols[mat];
 
+		matricies[mat] = calloc(rowSz, sizeof(unsigned int*));
 
-// No need for colsA because if the matrix multiplication is valid, then colsA = rowsB in A x B
-void multiplyMatricies (unsigned int*** matA, unsigned int*** matB, unsigned int rowsA, unsigned int rowsB, unsigned int colsB, unsigned int*** resultMat) {
-//	(*resultMat) = calloc (rowsA, sizeof(unsigned int*));
-//	for (int r=0; r<rowsA; r++)
-//		(*resultMat)[r] = calloc (colsB, sizeof(unsigned int*));
+		for (int r=0; r<rowSz; r++) {
+			matricies[mat][r] = calloc(colSz, sizeof(unsigned int));
 
-	for (int cb=0; cb<colsB; cb++) {
-		for (int ra=0; ra<rowsA; ra++) {
-			int dotProd = 0;
-			
-			for (int i=0; i<rowsB; i++)
-				dotProd += (*matA)[ra][i] * (*matB)[i][cb];
-
-			printf("\nra:%d\n", ra);
-			unsigned int* intermArr = (*resultMat)[ra];
-			intermArr[cb] = dotProd;
+			for (int c=0; c<colSz; c++) {
+				if (!fscanf(fp, "%d ", &matricies[mat][r][c])) {
+					perror("reading matrix value failed");
+					exit(EXIT_FAILURE);
+				}
+			}
 		}
 	}
 }
 
 
+void print2DArr (
+		unsigned int** arr, unsigned int rows, unsigned int cols
+		) {
 
-void print2DArr (unsigned int** arr, unsigned int rows, unsigned int cols) {
-	for (int r=0; r<rows; r++) {
-		for (int c=0; c<cols; c++) {
+	for (unsigned int r=0; r<rows; r++) {
+		for (unsigned int c=0; c<cols; c++) {
 			printf("%3d ", arr[r][c]);
 		}
 
@@ -273,15 +218,166 @@ void print2DArr (unsigned int** arr, unsigned int rows, unsigned int cols) {
 	}
 }
 
-void print2DSizeArr (unsigned int*** arr, unsigned int numMats) {
-	for (int r=0; r<numMats; r++) {
-		for (int c=0; c<numMats; c++) {
-			printf("%2d x%2d | ", arr[r][c][0], arr[r][c][1]);
-		}
 
-		printf("\n");
+
+
+
+
+//======================================================
+//
+//    Processing
+//
+//======================================================
+
+void matMul (
+		unsigned int** matA, unsigned int rowsA, unsigned int colsA,
+		unsigned int** matB, unsigned int rowsB, unsigned int colsB,
+		unsigned int** returnMatResult
+		) {
+
+	assert(colsA == rowsB);  /* This is needed for the matrix multiplication to be valid */
+
+	// matrixResult has dimensions rowsA x colsB
+	for (int ra=0; ra<(int)rowsA; ra++) {
+		for (int cb=0; cb<(int)colsB; cb++) {
+			int dotProduct = 0;
+
+			for (int i=0; i<(int)colsA; i++)
+				dotProduct += matA[ra][i] * matB[i][cb];
+
+			returnMatResult[ra][cb] = dotProduct;
+		}
 	}
 }
+
+
+void multipleMatMulMatrix (
+		unsigned int numMats, unsigned int*** matricies, unsigned int* numRows, unsigned int* numCols,
+		int** matMulCosts, unsigned int matStart, unsigned int matEnd,
+		unsigned int** returnMatMul
+		) {
+	if (matStart == matEnd) {
+		for (unsigned int r=0; r<numRows[matStart]; r++) {
+			for (unsigned int c=0; c<numCols[matStart]; c++)
+				returnMatMul[r][c] = matricies[matStart][r][c];
+		}
+		return;
+	} else if (matStart+1 == matEnd) {
+		matMul(matricies[matStart], numRows[matStart], numCols[matStart],
+				matricies[matEnd], numRows[matEnd], numCols[matEnd],
+				returnMatMul
+				);
+		return;
+	}
+
+	int targetMinCost;
+	multipleMatMulCost(numRows, numCols, matMulCosts, matStart, matEnd, &targetMinCost);
+	for (int grouping=(int)matStart; grouping<(int)matEnd; grouping++) {
+		int totalCost;
+		calcCostOfGrouping(numRows, numCols, matMulCosts, 
+				matStart, matEnd, grouping, &totalCost);
+
+		if (totalCost != targetMinCost)
+			continue;
+
+		unsigned int rowsA = numRows[matStart];
+		unsigned int colsA = numCols[grouping];
+		unsigned int rowsB = numRows[grouping + 1];
+		unsigned int colsB = numCols[matEnd];
+
+		unsigned int** matA = calloc(rowsA, sizeof(unsigned int*));
+		unsigned int** matB = calloc(rowsB, sizeof(unsigned int*));
+		for (unsigned int ra=0; ra<rowsA; ra++)
+			matA[ra] = calloc(colsA, sizeof(unsigned int));
+		for (unsigned int rb=0; rb<rowsB; rb++)
+			matB[rb] = calloc(colsB, sizeof(unsigned int));
+
+		multipleMatMulMatrix(numMats, matricies, numRows, numCols, 
+				matMulCosts, matStart, grouping, matA);
+		multipleMatMulMatrix(numMats, matricies, numRows, numCols, 
+				matMulCosts, grouping+1, matEnd, matB);
+		matMul(matA, rowsA, colsA, matB, rowsB, colsB, returnMatMul);
+
+		for (unsigned int ra=0; ra<rowsA; ra++)
+			free(matA[ra]);
+		for (unsigned int rb=0; rb<rowsB; rb++)
+			free(matB[rb]);
+		free(matA);
+		free(matB);
+
+		return;
+	}
+
+	// This function should always terminate in the above loop, never here
+	assert(1 == 0);
+}
+
+
+void multipleMatMulCost (
+		unsigned int* numRows, unsigned int* numCols, int** matMulCosts,
+		unsigned int matStart, unsigned int matEnd,
+		int* returnMinCost
+		) {
+
+	assert(matStart <= matEnd);  /* never do backwards multiplication */
+
+	if (matMulCosts[matStart][matEnd] != -1) {
+		*returnMinCost = matMulCosts[matStart][matEnd];
+		return;
+	} else if (matStart == matEnd) {
+		matMulCosts[matStart][matEnd] = 0;
+		*returnMinCost = 0;
+		return;
+	}
+
+	int minCost = -1;
+	for (int grouping=(int)matStart; grouping<(int)matEnd; grouping++) {
+		int groupingCost;
+		calcCostOfGrouping(numRows, numCols, matMulCosts, 
+				matStart, matEnd, grouping, &groupingCost);
+		
+		if (minCost == -1 || groupingCost < minCost)
+			minCost = groupingCost;
+	}
+
+	assert(minCost != -1);  /* If it equals -1, the above for loop was skipped */
+
+	matMulCosts[matStart][matEnd] = minCost;
+	*returnMinCost = (unsigned int) minCost;
+}
+
+
+/*
+	Calculates the cost a specific grouping of matricies,
+	assuming all further sub-groupings are optimal
+		ex groupings: (AB)C, (ABC)D, (AB)(CDEF)
+ */
+void calcCostOfGrouping (
+		unsigned int* numRows, unsigned int* numCols, 
+		int** matMulCosts, unsigned int matStart, unsigned int matEnd, int grouping,
+		int* returnTotalCost
+		) {
+
+	 /* 
+			The grouping number corresponds to where the string of mats are split, so it
+		  should be between the start & end matricies
+		*/
+	assert(grouping >= (int) matStart && grouping < (int) matEnd);
+
+	int costMatA; // the left and right groups are referred to as A and B
+	int costMatB; // ex: (GDS)(EF),  A = GDS, B = EF
+	multipleMatMulCost(numRows, numCols, matMulCosts, matStart, grouping, &costMatA);
+	multipleMatMulCost(numRows, numCols, matMulCosts, grouping+1, matEnd, &costMatB);
+
+	// cost to multiply matricies A and B
+	int costNextMult = numRows[matStart] * numCols[grouping] * numCols[matEnd];
+
+	*returnTotalCost = costMatA + costMatB + costNextMult;
+}
+
+
+
+
 
 
 
