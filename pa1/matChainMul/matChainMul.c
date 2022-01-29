@@ -6,7 +6,8 @@
 
 int main(int, char*[]);
 
-int calcMinCost (unsigned int****, unsigned int, unsigned int, unsigned int***, unsigned int****, unsigned int***);
+void optimallyMultiplyMatrix (unsigned int, unsigned int, unsigned int***, unsigned int***, unsigned int****, unsigned int****, unsigned int*);
+void multiplyMatricies (unsigned int***, unsigned int***, unsigned int, unsigned int, unsigned int, unsigned int***);
 
 void print2DArr (unsigned int**, unsigned int, unsigned int);
 void print2DSizeArr (unsigned int***, unsigned int);
@@ -121,45 +122,52 @@ int main(int argc, char* argv[]) {
 		matMulCost[i][i] = 0;
 	}
 
-	int** matrix;
+ 	for (int j=0; j+1<matrixCount; j++) {
+ 		int i = j+1;
+ 		matMulCost[i][j] = matMulSize[i-1][j][0] * matMulSize[i-1][j][1] * matMulSize[i][j+1][1];
+ 	}
+ 
+ 
+ 	int iteration = 2;
+ 
+ 	while (matMulCost[matrixCount-1][0] == 0) {
+ 		for (int i=0; i<matrixCount-iteration; i++) {
+ 			unsigned int costMin = -1;
+ 
+ 			for (int j=0; j<iteration; j++) {
+ 				int row = j+i;
+ 				int col = i+1+j;
+ 
+ 				int matCost = matMulSize[row][i][0] * matMulSize[row][i][1] * matMulSize[iteration + i][col][1] + matMulCost[row][i] + matMulCost[iteration + i][col];
+ 
+ 				if (matCost < costMin || costMin == -1)
+ 					costMin = matCost;
+ 			}
+ 
+ 			printf("\nWriting cost %d to [%d][%d]\n", costMin, i+1, i);
+ 			matMulCost[i+iteration][i] = costMin;
+ 		}
+ 
+ 		iteration++;
+ 	}
+ 
 
-	printf("Min Cost: %d\n", calcMinCost (&matricies, matrixCount-1, 0, &matMulCost, &matMulSize, &matrix));
+	// Now using the matMulCost, we recursively produce the matrix
+	// in the minimum number of operations.
+	//
+	// Doing this non-recursively would require building a tree which
+	// could actually be done while populating the cost array (matMulCost)
+	// but I chose against it because it feels a tad overkill.
+	unsigned int** matrixResult;
 
-	print2DArr(matrix, matMulSizes[matrixCount-1][0][0], matMulSizes[matrixCount-1][0][1]);
-
-// 	for (int j=0; j+1<matrixCount; j++) {
-// 		int i = j+1;
-// 		matMulCost[i][j] = matMulSize[i-1][j][0] * matMulSize[i-1][j][1] * matMulSize[i][j+1][1];
-// 	}
-// 
-// 
-// 	int iteration = 2;
-// 
-// 	while (matMulCost[matrixCount-1][0] == 0) {
-// 		for (int i=0; i<matrixCount-iteration; i++) {
-// 			unsigned int costMin = -1;
-// 
-// 			for (int j=0; j<iteration; j++) {
-// 				int row = j+i;
-// 				int col = i+1+j;
-// 
-// 				int matCost = matMulSize[row][i][0] * matMulSize[row][i][1] * matMulSize[iteration + i][col][1] + matMulCost[row][i] + matMulCost[iteration + i][col];
-// 
-// 				if (matCost < costMin || costMin == -1)
-// 					costMin = matCost;
-// 			}
-// 
-// 			printf("\nWriting cost %d to [%d][%d]\n", costMin, i+1, i);
-// 			matMulCost[i+iteration][i] = costMin;
-// 		}
-// 
-// 		iteration++;
-// 	}
-// 
-// 
-// 
-// 	print2DArr(matMulCost, matrixCount, matrixCount);
-// 	print2DSizeArr(matMulSize, matrixCount);
+	optimallyMultiplyMatrix(matrixCount-1, 0, &matrixResult, &matMulCost, &matMulSize, &matricies, &matrixCount);
+ 
+	printf("\n");
+	print2DArr(matrixResult, matMulSize[matrixCount-1][0][0], matMulSize[matrixCount-1][0][1]);
+	printf("\n");
+ 
+ 	print2DArr(matMulCost, matrixCount, matrixCount);
+ 	print2DSizeArr(matMulSize, matrixCount);
 
 
 
@@ -184,30 +192,74 @@ int main(int argc, char* argv[]) {
 }
 
 
-
-
-int calcMinCost (unsigned int**** matricies, unsigned int row, unsigned int col, unsigned int*** costArr, unsigned int**** sizesArr, unsigned int*** matrix) {
-	// Base Cases
+void optimallyMultiplyMatrix (unsigned int row, unsigned int col, unsigned int*** finalMatrix, unsigned int*** matMulCost, unsigned int**** matMulSize, unsigned int**** matricies, unsigned int* matrixCount) {
 	if (row == col) {
-		*matrix = (*matricies)[row];
-		return 0;
-	}
-	if (row < col) {
-		return -1;
-	}
-	if ((*costArr)[row][col] != 0) {
-		return (*costArr)[row][col];	
+		(*finalMatrix) = (*matricies)[row];
+		return;
 	}
 	if (row == col + 1) {
-		unsigned int cost = (*sizesArr)[row-1][col][0] * (*sizesArr)[row-1][col][1] * (*sizesArr)[row][col+1][1];
-		(*costArr)[row][col] = cost;
-		return cost;
+		multiplyMatricies(&(*matricies)[col], &(*matricies)[row], (*matMulSize)[col][col][0], (*matMulSize)[col][col][1], (*matMulSize)[row][row][1], finalMatrix);
+		return;
 	}
 
-	return -1;
+	unsigned int targetCost = (*matMulCost)[row][col];
+	for (int i=0; i<row; i++) {
+		unsigned int matR = col+i;
+		unsigned int matC = col+i+1;
+		unsigned int matCost = (*matMulSize)[matR][col][0] * (*matMulSize)[matR][col][1] * (*matMulSize)[row][matC][1] + (*matMulCost)[matR][col] + (*matMulCost)[row][matC];
+
+		if (matCost == targetCost) {
+			unsigned int** matA;
+			unsigned int** matB;
+			unsigned int** finalMatrix;
+
+			unsigned int rowsA = (*matMulSize)[matR][col][0];
+			unsigned int colsA = (*matMulSize)[matR][col][1];
+			unsigned int rowsB = (*matMulSize)[row][matC][0];
+			unsigned int colsB = (*matMulSize)[row][matC][1];
+
+			finalMatrix = calloc (rowsA, sizeof(unsigned int*));
+			for (int r=0; r<rowsA; r++)
+				finalMatrix[r] = calloc (colsB, sizeof(unsigned int));
+	
+			optimallyMultiplyMatrix(matR, col, &matA, matMulCost, matMulSize, matricies, matrixCount);
+			optimallyMultiplyMatrix(row, matC, &matB, matMulCost, matMulSize, matricies, matrixCount);
+			multiplyMatricies(&matA, &matB, rowsA, rowsB, colsB, &finalMatrix);
+
+// 			for (int ra=0; ra<rowsA; ra++)
+// 				free(matA[ra]);
+// 			for (int rb=0; rb<rowsB; rb++)
+// 				free(matB[rb]);
+// 			free(matA);
+// 			free(matB);
+
+			return;
+		}
+	}
+
+	perror("Optimal cost not found");
 }
 
 
+// No need for colsA because if the matrix multiplication is valid, then colsA = rowsB in A x B
+void multiplyMatricies (unsigned int*** matA, unsigned int*** matB, unsigned int rowsA, unsigned int rowsB, unsigned int colsB, unsigned int*** resultMat) {
+//	(*resultMat) = calloc (rowsA, sizeof(unsigned int*));
+//	for (int r=0; r<rowsA; r++)
+//		(*resultMat)[r] = calloc (colsB, sizeof(unsigned int*));
+
+	for (int cb=0; cb<colsB; cb++) {
+		for (int ra=0; ra<rowsA; ra++) {
+			int dotProd = 0;
+			
+			for (int i=0; i<rowsB; i++)
+				dotProd += (*matA)[ra][i] * (*matB)[i][cb];
+
+			printf("\nra:%d\n", ra);
+			unsigned int* intermArr = (*resultMat)[ra];
+			intermArr[cb] = dotProd;
+		}
+	}
+}
 
 
 
