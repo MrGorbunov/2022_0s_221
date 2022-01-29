@@ -86,15 +86,16 @@ int main(
 	for (unsigned int rf=0; rf<rowsFinalMat; rf++)
 		finalMat[rf] = calloc(colsFinalMat, sizeof(unsigned int));
 
+	// Actual calculations
 	multipleMatMulMatrix(numMats, matricies, numRows, numCols, 
 			multMinCost, 0, numMats-1, finalMat);
 
 	printf("%d\n", minCost);
-	for (unsigned int rf=0; rf<rowsFinalMat; rf++) {
-		for (unsigned int cf=0; cf<colsFinalMat; cf++)
-			printf("%d ", finalMat[rf][cf]);
-		printf("\n");
-	}
+ 	for (unsigned int rf=0; rf<rowsFinalMat; rf++) {
+ 		for (unsigned int cf=0; cf<colsFinalMat; cf++)
+ 			printf("%d ", finalMat[rf][cf]);
+ 		printf("\n");
+ 	}
 
 
 	for (unsigned int rf=0; rf<rowsFinalMat; rf++)
