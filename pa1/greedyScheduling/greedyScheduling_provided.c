@@ -4,6 +4,8 @@
 
 // Selection sort based approach to sorting jobs
 
+// Okie doke
+
 int main(int argc, char* argv[]) {
 
     // First peek at how many jobs and timeslots there are
