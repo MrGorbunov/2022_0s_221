@@ -21,13 +21,16 @@ struct element* push (
 
 // Remove element from the top of the stack
 char pop ( struct element** stack ) {
-    if (*stack != NULL) {
-			char topChar = (*stack)->close;
-			*stack = (*stack)->next;
-			return topChar;
-    } else {
-        return '\0';
-    }
+		if (*stack == NULL) {
+			return '\0';
+		}
+
+		char topChar = (*stack)->close;
+		struct element* nextNode = (*stack)->next;
+
+		free(*stack);
+		*stack = nextNode;
+		return topChar;
 }
 
 int main(int argc, char* argv[]) {
@@ -51,10 +54,19 @@ int main(int argc, char* argv[]) {
         switch(buff) {
 						// Openers
             case '<' :
+                root = push(root, '>');
+								break;
+
             case '(' :
+                root = push(root, ')');
+								break;
+
             case '[' :
+                root = push(root, ']');
+								break;
+
             case '{' :
-                root = push(root, buff);
+                root = push(root, '}');
 								break;
 
             case '>' :
@@ -62,25 +74,25 @@ int main(int argc, char* argv[]) {
             case ']' :
             case '}' :
 								expected_char = pop(&root);
-								if (expected_char != buff)
+								if (expected_char != buff) {
+									// printf("Expected: %c \t Got: %c", expected_char, buff);
 									balanced = false;
+								}
 								break;
 
             default :
-                printf("Invalid character\n" );
+                printf("Invalid character \n");
         }
     }
 
-		// Free all nodes
-		while ( root != NULL ) {
-			struct element* next_node = root->next;
+		// Free any remaining items
+		while (root != NULL) {
+			struct element* next_elm = root->next;
 			free(root);
-			root = next_node;
+			root = next_elm;
 		}
 
-		printf("Hello");
     printf ( balanced ? "yes" : "no" );
-		printf ("\n");
     fclose(fp);
     return 0;
 }
