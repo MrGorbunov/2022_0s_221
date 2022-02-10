@@ -78,4 +78,5 @@ cachelab/
 # Editing & Submission files
 *.swp
 *.tar
+venv/*
 
