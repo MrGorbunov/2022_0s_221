@@ -13,10 +13,32 @@ struct BSTNode {
 };
 
 // Add new data to the BST using recursion
-/* ... */
+void add_to_bst (struct BSTNode* root, int value) {
+	assert(root != NULL);
+	struct BSTNode** child_to_travel_to;
+
+	if (value == root->key) {
+		return;
+	} else if (value < root->key) {
+		child_to_travel_to = &(root->l_child);
+	} else {
+		child_to_travel_to = &(root->r_child);
+	}
+
+	if (*child_to_travel_to == NULL) {
+		*child_to_travel_to = malloc(sizeof(struct BSTNODE));	
+	}
+}
 
 // Delete the BST using recursion
-/* ... */
+void free_bst (struct BSTNode* root) {
+	if (root == NULL)
+		return;
+
+	free_bst(root->l_child);
+	free_bst(root->r_child);
+	free(root);
+}
 
 
 // LINKED LIST IMPLEMENTATION OF QUEUE
