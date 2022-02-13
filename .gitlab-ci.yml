@@ -25,11 +25,12 @@ before_script:
   - pip install virtualenv
   - virtualenv venv
   - source venv/bin/activate
-  - pip install requirements.txt
+  - pip install -r requirements.txt
 
 run:
     script:
         - cd pa0
+        - pwd
         - python assignment_autograder.py
         - cd ../
         - pwd
