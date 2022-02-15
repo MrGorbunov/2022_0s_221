@@ -29,6 +29,6 @@ before_script:
 
 run:
     script:
-		- python correct_course_autograder.py
+		- ./bash_test.sh
 
 
