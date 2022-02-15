@@ -29,10 +29,6 @@ before_script:
 
 run:
     script:
-        - cd pa0
-        - pwd
-        - python assignment_autograder.py
-        - cd ../
-        - pwd
+		- python correct_course_autograder.py
 
 
