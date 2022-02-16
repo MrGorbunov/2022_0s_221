@@ -26,7 +26,7 @@ char pop ( struct element** stack ) {
 		}
 
 		char topChar = (*stack)->close;
-		struct element* nextNode = (*stack)->next;
+		struct element* nextNode = *(stack)->next;
 
 		free(*stack);
 		*stack = nextNode;
@@ -85,14 +85,15 @@ int main(int argc, char* argv[]) {
         }
     }
 
-		// Free any remaining items
-		while (root != NULL) {
-			struct element* next_elm = root->next;
-			free(root);
-			root = next_elm;
-		}
+	// Free any remaining items
+	while (root != NULL) {
+		struct element* next_elm = root->next;
+		free(root);
+		root = next_elm;
+	}
 
     printf ( balanced ? "yes" : "no" );
     fclose(fp);
     return 0;
 }
+
