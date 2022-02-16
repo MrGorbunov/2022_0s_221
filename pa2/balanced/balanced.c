@@ -26,7 +26,7 @@ char pop ( struct element** stack ) {
 		}
 
 		char topChar = (*stack)->close;
-		struct element* nextNode = *(stack)->next;
+		struct element* nextNode = (*stack)->next;
 
 		free(*stack);
 		*stack = nextNode;
