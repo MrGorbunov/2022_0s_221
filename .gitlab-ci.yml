@@ -29,6 +29,6 @@ before_script:
 
 run:
     script:
-		- ./bash_test.sh
+      - ./bash_test.sh
 
 
