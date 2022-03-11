@@ -5,4 +5,3 @@ Yipeng Huang
 
 Assignments completed by Michael Gorbunov
 Rutgers CS '25
-
