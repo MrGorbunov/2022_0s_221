@@ -18,8 +18,6 @@ paDirs=$(ls -al | grep -o "pa[0-9]\+\$")
 
 for d in $paDirs
 do
-	echo ""
-
 	# Go into a pa (performance assesment) directory
 	cd $startDir
 	cd $d
@@ -38,11 +36,8 @@ do
 	arrScores=($(grep -o "[0-9]\+" <<< $outScores))
 	arrPrograms=($(grep -o "[^ ]\+:" <<< $outPrograms | grep -o "[^:]\+"))
 
-	# Process scores
 	#
-	# If the assigment score is max, we don't need to do anything.
-	# Otherwise we need to print out an itemized breakdown of which
-	# tests failed
+	# Process scores
 
 	maxInd=${#arrPrograms[@]}
 	let maxInd--
@@ -80,6 +75,8 @@ do
 			echo "  - [~] $programName: $scoreGot/$scoreMax"
 		fi
 	done
+
+	echo
 done
 
 
