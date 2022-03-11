@@ -80,3 +80,7 @@ cachelab/
 *.tar
 venv/*
 
+# IDE files
+.vscode
+.idea
+
