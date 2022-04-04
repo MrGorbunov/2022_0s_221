@@ -66,11 +66,6 @@ answer_key
 *.xls
 *.xlsx
 
-# Bomb Lab
-!bomb/**/*.tar
-!bomb/*.tar
-!bomb/bomb56.tar
-
 # Cache Lab
 cachelab.tar
 cachelab/
