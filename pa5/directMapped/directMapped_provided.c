@@ -52,6 +52,7 @@ int main(int argc, char* argv[]) {
         printf( "Usage: ./directMapped <mem_trace_file>" );
     }
     char* mem_trace_file = argv[1];
+    char* mem_trace_file = "/home/velcro/Documents/Undergrad/CS/CompArch-211/2022_0s_221/pa5/directMapped/tests/trace_0.txt";
     FILE *fp = fopen(mem_trace_file, "r");
     if (!fp) {
         fprintf(stderr, "Error opening file '%s'\n", mem_trace_file);
