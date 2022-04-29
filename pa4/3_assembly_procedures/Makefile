@@ -1,10 +1,10 @@
-OUTPUT=6_arithmetic
+OUTPUT=3_recursion
 CC=gcc
-CFLAGS= -Og -Wall -Werror -std=c99
+CFLAGS=-Wall -Werror -std=c99
 ASM = swap.s
 
 %.s: %.c
-	$(CC) $(CFLAGS) -S -fno-inline -fno-if-conversion $^ -o $@
+	$(CC) $(CFLAGS) -g -S -fno-inline -fno-if-conversion $^ -o $@
 
 $(OUTPUT): $(OUTPUT).s
 	$(CC) $(CFLAGS) $^ -o $@
