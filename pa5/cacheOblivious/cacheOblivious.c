@@ -15,7 +15,7 @@ void recursiveMatTrans (
     int* B, size_t offset_row_B, size_t offset_col_B
 ) {
 
-    if (n<=2) { // base case
+    if (n<=1) { // base case
         for ( size_t i=0; i<n; i++ ) {
             for ( size_t j=0; j<n; j++ ) {
                 B[ (offset_row_B+j)*global_n + offset_col_B+i ] = A[ (offset_row_A+i)*global_n + offset_col_A+j ];
