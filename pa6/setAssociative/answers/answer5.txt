@@ -1,2 +1,2 @@
 read_hit = 0
-read_byte = 125
+read_byte = 138
